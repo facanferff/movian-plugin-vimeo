@@ -1,0 +1,15 @@
+{
+	"description": "Vimeo is a video-sharing website in which users can upload, share and view videos. Vimeo was founded in November 2004 by Jake Lodwick and Zach Klein.",
+	"author": "Fábio Ferreira",
+	"homepage": "https://github.com/facanferff/movian-plugins",
+	"title": "Vimeo",
+	"synopsis": "Vimeo: Video Sharing service",
+	"version": "0.9",
+	"file": "vimeo.js",
+	"showtimeVersion": "5.0.211",
+	"type": "ecmascript",
+	"id": "vimeo",
+	"icon": "logo.png",
+	"category": "video",
+	"apiversion": 2
+}
