@@ -1,9 +1,9 @@
 var cache = require('showtime/store').create('cache');
 
-exports.loader = (function() {
+exports.loader = (function () {
     var template = {
         "handleItem": {
-            "album": function(page, title, uri, image, item, config) {
+            "album": function (page, title, uri, image, item, config) {
                 var item = page.appendItem(PREFIX + ":user:" + api.getUserIdFromUri(item.user.uri) +
                     ":album:" + api.getAlbumIdFromUri(uri) + ":videos", 'directory', {
                         title: title,
@@ -25,14 +25,10 @@ exports.loader = (function() {
 
                 var item = page.appendItem(metadata.uri, metadata.type, metadata);
 
-                if (config.cache && config.storeInCache) {
-                    cache[config.parentUri].items.push(metadata);
-                }
-
                 if (config.beforeItem) item.moveBefore(config.beforeItem);
             },
 
-            "channel": function(page, title, uri, image, item, config) {
+            "channel": function (page, title, uri, image, item, config) {
                 var item = page.appendItem(PREFIX + ":channel:" + api.getChannelIdFromUri(uri) + ":videos",
                     "directory", {
                         title: title,
@@ -43,7 +39,7 @@ exports.loader = (function() {
                 if (config.beforeItem) item.moveBefore(config.beforeItem);
             },
 
-            "group": function(page, title, uri, image, item, config) {
+            "group": function (page, title, uri, image, item, config) {
                 var item = page.appendItem(PREFIX + ":group:" + api.getGroupIdFromUri(uri) + ":videos",
                     "directory", {
                         title: title,
@@ -54,7 +50,7 @@ exports.loader = (function() {
                 if (config.beforeItem) item.moveBefore(config.beforeItem);
             },
 
-            "user": function(page, title, uri, image, item, config) {
+            "user": function (page, title, uri, image, item, config) {
                 var item = page.appendItem(PREFIX + ":user:" + api.getUserIdFromUri(uri),
                     "directory", {
                         title: title,
@@ -65,7 +61,7 @@ exports.loader = (function() {
                 if (config.beforeItem) item.moveBefore(config.beforeItem);
             },
 
-            "video": function(page, title, uri, image, item, config) {
+            "video": function (page, title, uri, image, item, config) {
                 var videoId = api.getClipIdFromUri(uri);
                 var videoItem = page.appendItem(PREFIX + ":video:" + videoId, 'video', {
                     title: title,
@@ -92,7 +88,7 @@ exports.loader = (function() {
             }
         },
 
-        "list": function(page, uri, args, handleItem, config) {
+        "list": function (page, uri, args, handleItem, config) {
             args = args || {};
             config = config || {};
             page.loading = true;
@@ -102,31 +98,11 @@ exports.loader = (function() {
             var processedEntries = 0;
             var totalEntries = 0;
 
-            if (config.cache && cache[uri] && cache[uri].ready) {
-                for (var i in cache[uri].items) {
-                    var item = cache[uri].items[i];
-                    handleItem(page, null, null, null, null, config, item);
-                    page.entries++;
-                }
-
-                page.loading = false;
-                return;
-            }
-
             config.parentUri = uri;
-
-            if (config.cache) {
-                log.d("Creating local cache for URI " + uri);
-                cache[uri] = {
-                    ready: false,
-                    items: []
-                };
-                config.storeInCache = true;
-            }
 
             function loader() {
                 args.page = pageNum;
-                api.call(page, 'GET', uri, args, function(meta) {
+                api.call(page, 'GET', uri, args, function (meta) {
                     page.loading = false;
                     totalEntries = meta.total || 0;
 
@@ -182,8 +158,6 @@ exports.loader = (function() {
                             });
 
                             if (config.beforeItem) item.moveBefore(config.beforeItem);
-                        } else if (config.cache) {
-                            cache[config.parentUri].ready = true;
                         }
                     }
                 }, config);
@@ -196,57 +170,58 @@ exports.loader = (function() {
 
     return {
         "categories": {
-            "root": function(page, ignored, args, config) {
-                config.cache = true;
-                template.list(page, "/categories", args, template.handleItem.category, config);
+            "root": function (page, ignored, args, config) {
+                config.cacheTime = 7 * 24 * 60 * 60; // 7 days
+                template.list(page, "/categories", args,
+                    template.handleItem.category, config);
             }
         },
 
         "category": {
-            "channels": function(page, category, args, config) {
+            "channels": function (page, category, args, config) {
                 template.list(page, "/categories/" + category + "/channels", args,
                     template.handleItem.channel, config);
             },
 
-            "groups": function(page, category, args, config) {
+            "groups": function (page, category, args, config) {
                 template.list(page, "/categories/" + category + "/groups", args,
                     template.handleItem.group, config);
             },
 
-            "root": function(page, category, args, config) {
+            "root": function (page, category, args, config) {
                 template.list(page, "/categories/" + category, args,
                     template.handleItem.category, config);
             },
 
-            "videos": function(page, category, args, config) {
+            "videos": function (page, category, args, config) {
                 template.list(page, "/categories/" + category + "/videos", args,
                     template.handleItem.video, config);
             }
         },
 
         "channel": {
-            "videos": function(page, channel, args, config) {
+            "videos": function (page, channel, args, config) {
                 template.list(page, "/channels/" + channel + "/videos", args,
                     template.handleItem.video, config);
             }
         },
 
         "channels": {
-            "root": function(page, ignored, args, config) {
+            "root": function (page, ignored, args, config) {
                 template.list(page, "/channels", args,
                     template.handleItem.channel, config);
             }
         },
 
         "group": {
-            "videos": function(page, group, args, config) {
+            "videos": function (page, group, args, config) {
                 template.list(page, "/groups/" + group + "/videos", args,
                     template.handleItem.video, config);
             }
         },
 
         "groups": {
-            "root": function(page, ignored, args, config) {
+            "root": function (page, ignored, args, config) {
                 template.list(page, "/groups", args,
                     template.handleItem.group, config);
             }
@@ -254,32 +229,32 @@ exports.loader = (function() {
 
         "user": {
             "album": {
-                "videos": function(page, data, args, config) {
+                "videos": function (page, data, args, config) {
                     template.list(page, "/users/" + data.user + "/albums/" + data.album + "/videos",
                         args, template.handleItem.video, config);
                 }
             },
 
-            "albums": function(page, user, args, config) {
+            "albums": function (page, user, args, config) {
                 template.list(page, "/users/" + user + "/albums", args,
                     template.handleItem.album, config);
             },
 
-            "videos": function(page, user, args, config) {
+            "videos": function (page, user, args, config) {
                 template.list(page, "/users/" + user + "/videos", args,
                     template.handleItem.video, config);
             }
         },
 
         "users": {
-            "root": function(page, ignored, args, config) {
+            "root": function (page, ignored, args, config) {
                 template.list(page, "/users", args,
                     template.handleItem.user, config);
             }
         },
 
         "videos": {
-            "root": function(page, ignored, args, config) {
+            "root": function (page, ignored, args, config) {
                 template.list(page, "/videos", args,
                     template.handleItem.video, config);
             }

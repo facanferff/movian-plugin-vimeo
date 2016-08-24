@@ -1,17 +1,20 @@
 var credentials = require('showtime/store').create('credentials');
+var googl = require('./goo.gl');
 
 var API_BASE_URL = "https://api.vimeo.com";
 
-// please use your own access token
+// please use your own tokens
 var APP_CLIENT = "NTgwYjFkMmUwMzhiOWRlNDc5ZWM4ZGJmZGUzYjRlY2JmZGUzYzE4MzozYWI2OTU0MTMwMTc0NTFjNmU1M2I0ODRlMThmOThhZDBmMTk2ZjU4";
 
-exports.getAlbumIdFromUri = function(uri) {
+var REDIRECT_URI = "https://movian.tv";
+
+exports.getAlbumIdFromUri = function (uri) {
     var match = uri.match("/albums/(.*)");
     if (!match) throw "Invalid album URI: " + uri;
     return match[1];
 };
 
-exports.getCategoryIdFromUri = function(uri) {
+exports.getCategoryIdFromUri = function (uri) {
     var match = uri.match("/categories/(.*)/(.*)");
     if (match) return match[2];
 
@@ -20,25 +23,25 @@ exports.getCategoryIdFromUri = function(uri) {
     return match[1];
 };
 
-exports.getChannelIdFromUri = function(uri) {
+exports.getChannelIdFromUri = function (uri) {
     var match = uri.match("/channels/(.*)");
     if (!match) throw "Invalid channel URI: " + uri;
     return match[1];
 };
 
-exports.getClipIdFromUri = function(uri) {
+exports.getClipIdFromUri = function (uri) {
     var match = uri.match("/videos/([0-9]*)");
     if (!match) throw "Invalid video URI: " + uri;
     return match[1];
 };
 
-exports.getGroupIdFromUri = function(uri) {
+exports.getGroupIdFromUri = function (uri) {
     var match = uri.match("/groups/([0-9]*)");
     if (!match) throw "Invalid group URI: " + uri;
     return match[1];
 };
 
-exports.getUserIdFromUri = function(uri) {
+exports.getUserIdFromUri = function (uri) {
     var match = uri.match("/users/([0-9]*)");
     if (!match) throw "Invalid user URI: " + uri;
     return match[1];
@@ -348,11 +351,22 @@ function generatePluginAuth() {
     log.d("New plugin access token: " + credentials.plugin_auth);
 }
 
-function generateUserAuth() {
+function buildAuthorizationUrl() {
+    var state = "state_" + Core.deviceId + "_" + (Math.round(Math.random() * 1000000007));
+    var url = "https://api.vimeo.com/oauth/authorize" +
+        //"?client_id=" + CLIENT_ID +
+        "&response_type=code" +
+        "&state=" + state +
+        "&redirect_uri=" + REDIRECT_URI;
+
+    return googl.shorten(url);
+}
+
+exports.generateUserAuth = function generateUserAuth() {
     log.d("Generating an user's access token");
 
     var state = "123";
-    var verificationUrl = "TODO";
+    var authorizationUrl = buildAuthorizationUrl();
 
     // Create a popup
     // this is done manually using properties in order to wait for event asyncronously
@@ -361,7 +375,7 @@ function generateUserAuth() {
     prop.setRichStr(popupAuth, 'message',
         'To give Movian access to your Vimeo account,\n' +
         'open a web browser on your computer or smartphone and visit:\n\n<font size="6">' +
-        verificationUrl +
+        authorizationUrl +
         '</font>\n\nThis popup will close automatically once the authentication is completed.');
     popupAuth.cancel = true; // Show the cancel button
 
@@ -409,24 +423,48 @@ function generateUserAuth() {
     timer = setTimeout(checkToken, 10000);
 
     // Subscribe to the popup eventSink to detect if user presses cancel
-    prop.subscribe(popupAuth.eventSink, function(event, data) {
-        if (event == 'action' && data == 'Cancel') {
+    prop.subscribe(popupAuth.eventSink, function (event, data) {
+        if (event === 'action' && data === 'Cancel') {
             prop.destroy(popupAuth);
             clearTimeout(timer);
             popup.notify('You need to authenticate before using this operation', 5);
         }
     }, {
-        // This will make the subscription destroy itself when the popup
-        // is destroyed. Without this we will retain references to captured
-        // variables indefinitely
-        autoDestroy: true
-    });
+            // This will make the subscription destroy itself when the popup
+            // is destroyed. Without this we will retain references to captured
+            // variables indefinitely
+            autoDestroy: true
+        });
 }
 
-exports.call = function(page, method, uri, args, callback, config) {
+exports.call = function (page, method, uri, args, callback, config) {
     if (uri === null) throw "API's URI can't be null";
     args = args || {};
     config = config || {};
+
+    if (args.per_page === undefined)
+        args.per_page = 50; // maximum allowed
+
+    if (args.fields === undefined) {
+        // log.e("API request not optimized (" + uri + ")");
+        args.fields = [
+            // generic fields
+            'uri',
+            'name',
+            'pictures',
+            'privacy',
+
+            // specific fields
+            'subcategories',
+            'user.uri',
+            'user.name',
+            'description',
+            'bio',
+            'duration',
+            'stats.plays',
+            'metadata.connections.likes.total'
+        ].join(",");
+    }
 
     var url = API_BASE_URL + uri;
 
@@ -437,6 +475,7 @@ exports.call = function(page, method, uri, args, callback, config) {
     var headers = {};
     headers["Content-Type"] = "application/vnd.vimeo.category+json";
     headers.Accept = "application/vnd.vimeo.*+json;version=3.2";
+    headers['User-Agent'] = "Vimeo Movian Plugin";
 
     if (credentials.user_auth)
         headers.Authorization = credentials.user_auth;
@@ -448,17 +487,22 @@ exports.call = function(page, method, uri, args, callback, config) {
         args: args,
         noFail: true, // Don't throw on HTTP errors (400- status code)
         compression: true, // Will send 'Accept-Encoding: gzip' in request
-        caching: true, // Enables Movian's built-in HTTP cache
-        headers: headers
+        headers: headers,
+        cacheTime: config.cacheTime ? config.cacheTime : 15 * 60,
     };
 
     if (service.debug) opts.debug = true;
 
     log.d("Requesting " + url);
-    http.request(url, opts, function(err, result) {
+    http.request(url, opts, function (err, result) {
         if (result) {
-            if (result.statuscode === 401 ||
-                (result.statuscode == 403 && JSON.parse(result).error === "Your access token does not have the \"interact\" scope")) {
+            if (result.statuscode === 0) {
+                log.d("Obtained response from Movian's built in cache");
+                var json = JSON.parse(result);
+                callback(json);
+            }
+            else if (result.statuscode === 401 ||
+                (result.statuscode === 403 && JSON.parse(result).error === "Your access token does not have the \"interact\" scope")) {
                 // auth failed
                 log.d("API request (" + url + ") failed due to unauthorized request");
 
@@ -509,6 +553,7 @@ exports.call = function(page, method, uri, args, callback, config) {
                     else console.error(err);
                 } else {
                     try {
+                        log.d(result);
                         var json = JSON.parse(result);
                         if (!config.noFail && json.error) {
                             console.error("Request failed: " + url);
@@ -529,6 +574,6 @@ exports.call = function(page, method, uri, args, callback, config) {
 };
 
 exports.me = {};
-exports.me.like = function(page, videoId, callback) {
+exports.me.like = function (page, videoId, callback) {
     api.call(page, 'PUT', "/me/likes/" + videoId, {}, callback);
 };

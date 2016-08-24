@@ -1,5 +1,5 @@
-exports.controller = (function() {
-    var template = function(page, parentUri, id, options, loader, args, config) {
+exports.controller = (function () {
+    var template = function (page, parentUri, id, options, loader, args, config) {
         if (!args) args = {};
         if (!config) config = {};
 
@@ -8,7 +8,7 @@ exports.controller = (function() {
 
         if (!config.noPageMenu && page.options) {
             movian.initializePageMenu(page, options,
-                function() {
+                function () {
                     args.sort = movian.options.sort();
                     args.direction = movian.options.direction();
 
@@ -18,7 +18,7 @@ exports.controller = (function() {
         }
 
         if (!config.noPageMetadata && parentUri) {
-            var meta = api.call(page, 'GET', parentUri, {}, function(meta) {
+            var meta = api.call(page, 'GET', parentUri, {}, function (meta) {
                 page.metadata.title = meta.name;
                 if (meta.pictures) page.metadata.icon = movian.arrayToImageSet(meta.pictures.sizes);
             });
@@ -29,7 +29,7 @@ exports.controller = (function() {
 
     return {
         "categories": {
-            "root": function(page, args) {
+            "root": function (page, args) {
                 page.type = "directory";
                 page.metadata.title = "Vimeo - Categories";
                 template(page, null, null,
@@ -40,79 +40,50 @@ exports.controller = (function() {
         },
 
         "category": {
-            "root": function(page, category, args) {
+            "root": function (page, category, args) {
                 page.type = "directory";
-                page.model.contents = 'grid';
 
                 // separators
                 var separatorSubcategories = page.appendPassiveItem("separator", null, {
                     title: "Subcategories"
                 });
-                var separatorVideos = page.appendPassiveItem("separator", null, {
-                    title: "Videos"
-                });
-                var separatorChannels = page.appendPassiveItem("separator", null, {
-                    title: "Channels"
-                });
-                var separatorGroups = page.appendPassiveItem("separator", null, {
-                    title: "Groups"
+                var separatorOthers = page.appendPassiveItem("separator", null, {
+                    title: "Others"
                 });
 
                 template(page, "/categories/" + category, category,
                     api.category.root.options, Loader.category.root, args, {
                         "noPaginator": true,
-                        "beforeItem": separatorVideos,
+                        "beforeItem": separatorOthers,
                         "destroyIfNoElements": separatorSubcategories
                     });
 
-                template(page, "/categories/" + category, category,
-                    api.category.videos.options, Loader.category.videos, {
-                        "per_page": 4
-                    }, {
-                        "noPaginator": true,
-                        "noPageMetadata": true,
-                        "noPageMenu": true,
-                        "moreItemsUri": PREFIX + ":category:" + category + ":videos",
-                        "beforeItem": separatorChannels
-                    });
+                page.appendItem(PREFIX + ":category:" + category + ":videos", "directory", {
+                    "title": "Videos"
+                });
 
-                template(page, "/categories/" + category, category,
-                    api.category.channels.options, Loader.category.channels, {
-                        "per_page": 4
-                    }, {
-                        "noPaginator": true,
-                        "noPageMetadata": true,
-                        "noPageMenu": true,
-                        "moreItemsUri": PREFIX + ":category:" + category + ":channels",
-                        "beforeItem": separatorGroups
-                    });
+                page.appendItem(PREFIX + ":category:" + category + ":channels", "directory", {
+                    "title": "Channels"
+                });
 
-                template(page, "/categories/" + category, category,
-                    api.category.groups.options, Loader.category.groups, {
-                        "per_page": 4
-                    }, {
-                        "noPaginator": true,
-                        "noPageMetadata": true,
-                        "noPageMenu": true,
-                        "moreItemsUri": PREFIX + ":category:" + category + ":groups"
-                    });
+                page.appendItem(PREFIX + ":category:" + category + ":groups", "directory", {
+                    "title": "Groups"
+                });
             },
 
-            "channels": function(page, category) {
+            "channels": function (page, category) {
                 page.type = "directory";
-                page.model.contents = "grid";
                 template(page, "/categories/" + category, category,
                     api.category.channels.options, Loader.category.channels);
             },
 
-            "groups": function(page, category) {
+            "groups": function (page, category) {
                 page.type = "directory";
-                page.model.contents = "grid";
                 template(page, "/categories/" + category, category,
                     api.category.groups.options, Loader.category.groups);
             },
 
-            "videos": function(page, category) {
+            "videos": function (page, category) {
                 page.type = "directory";
                 template(page, "/categories/" + category, category,
                     api.category.videos.options, Loader.category.videos);
@@ -120,7 +91,7 @@ exports.controller = (function() {
         },
 
         "channel": {
-            "videos": function(page, channel) {
+            "videos": function (page, channel) {
                 page.type = "directory";
                 template(page, "/channels/" + channel, channel,
                     api.channel.videos.options, Loader.channel.videos);
@@ -128,9 +99,8 @@ exports.controller = (function() {
         },
 
         "channels": {
-            "root": function(page, args) {
+            "root": function (page, args) {
                 page.type = "directory";
-                page.model.contents = "grid";
                 page.metadata.title = "Vimeo - Channels";
                 template(page, null, null,
                     api.channels.root.options, Loader.channels.root, args);
@@ -138,7 +108,7 @@ exports.controller = (function() {
         },
 
         "group": {
-            "videos": function(page, group) {
+            "videos": function (page, group) {
                 page.type = "directory";
                 template(page, "/groups/" + group, group,
                     api.group.videos.options, Loader.group.videos);
@@ -146,9 +116,8 @@ exports.controller = (function() {
         },
 
         "groups": {
-            "root": function(page, args) {
+            "root": function (page, args) {
                 page.type = "directory";
-                page.model.contents = "grid";
                 page.metadata.title = "Vimeo - Groups";
                 template(page, null, null,
                     api.groups.root.options, Loader.groups.root, args);
@@ -156,7 +125,7 @@ exports.controller = (function() {
         },
 
         "home": {
-            "root": function(page) {
+            "root": function (page) {
                 page.type = "directory";
                 page.model.contents = "grid";
                 page.metadata.icon = Plugin.path + "logo.png";
@@ -172,11 +141,8 @@ exports.controller = (function() {
                 var separatorCategories = page.appendPassiveItem("separator", null, {
                     "title": "Categories"
                 });
-                var separatorChannels = page.appendPassiveItem("separator", null, {
-                    "title": "Channels"
-                });
-                var separatorGroups = page.appendPassiveItem("separator", null, {
-                    "title": "Groups"
+                var separatorOthers = page.appendPassiveItem("separator", null, {
+                    "title": "Others"
                 });
 
                 // Categories guide
@@ -185,38 +151,23 @@ exports.controller = (function() {
                     "noPageMetadata": true,
                     "noPageMenu": true,
                     "moreItemsUri": PREFIX + ":categories",
-                    "beforeItem": separatorChannels
+                    "beforeItem": separatorOthers
                 });
 
-                // Channel guide
-                template(page, null, null, api.channels.root.options, Loader.channels.root, {
-                    "sort": "followers",
-                    "direction": "desc",
-                    "per_page": 4
-                }, {
-                    "noPaginator": true,
-                    "noPageMetadata": true,
-                    "noPageMenu": true,
-                    "moreItemsUri": PREFIX + ":channels",
-                    "beforeItem": separatorGroups
+                // Channels uri
+                page.appendItem(PREFIX + ":channels", "directory", {
+                    "title": "Channels"
                 });
 
-                // Group guide
-                template(page, null, null, api.groups.root.options, Loader.groups.root, {
-                    "sort": "followers",
-                    "direction": "desc",
-                    "per_page": 4
-                }, {
-                    "noPaginator": true,
-                    "noPageMetadata": true,
-                    "noPageMenu": true,
-                    "moreItemsUri": PREFIX + ":groups"
+                // Groups uri
+                page.appendItem(PREFIX + ":groups", "directory", {
+                    "title": "Groups"
                 });
             }
         },
 
         "search": {
-            "root": function(page, query) {
+            "root": function (page, query) {
                 page.type = "directory";
                 page.metadata.title = "Search";
                 page.metadata.icon = Plugin.path + "logo.png";
@@ -225,14 +176,8 @@ exports.controller = (function() {
                 page.appendPassiveItem("separator", null, {
                     "title": "Videos"
                 });
-                var separatorUsers = page.appendPassiveItem("separator", null, {
-                    "title": "Users"
-                });
-                var separatorChannels = page.appendPassiveItem("separator", null, {
-                    "title": "Channels"
-                });
-                var separatorGroups = page.appendPassiveItem("separator", null, {
-                    "title": "Groups"
+                var separatorOthers = page.appendPassiveItem("separator", null, {
+                    "title": "Others"
                 });
 
                 // Videos
@@ -242,75 +187,49 @@ exports.controller = (function() {
                     "direction": "desc",
                     "per_page": 4
                 }, {
-                    "noPaginator": true,
-                    "noPageMetadata": true,
-                    "noPageMenu": true,
-                    "moreItemsUri": PREFIX + ":search:videos:" + query,
-                    "beforeItem": separatorUsers
+                        "noPaginator": true,
+                        "noPageMetadata": true,
+                        "noPageMenu": true,
+                        "moreItemsUri": PREFIX + ":search:videos:" + query,
+                        "beforeItem": separatorOthers
+                    });
+
+                // Users uri
+                page.appendItem(PREFIX + ":search:users:" + query, "directory", {
+                    "title": "Users"
                 });
 
-                // Users
-                template(page, null, null, api.users.root.options, Loader.users.root, {
-                    "query": query,
-                    "sort": "relevant",
-                    "direction": "desc",
-                    "per_page": 4
-                }, {
-                    "noPaginator": true,
-                    "noPageMetadata": true,
-                    "noPageMenu": true,
-                    "moreItemsUri": PREFIX + ":search:users:" + query,
-                    "beforeItem": separatorChannels
+                // Channels uri
+                page.appendItem(PREFIX + ":search:channels:" + query, "directory", {
+                    "title": "Channels"
                 });
 
-                // Channels
-                template(page, null, null, api.channels.root.options, Loader.channels.root, {
-                    "query": query,
-                    "sort": "followers",
-                    "direction": "desc",
-                    "per_page": 4
-                }, {
-                    "noPaginator": true,
-                    "noPageMetadata": true,
-                    "noPageMenu": true,
-                    "moreItemsUri": PREFIX + ":search:channels:" + query,
-                    "beforeItem": separatorGroups
-                });
-
-                // Groups
-                template(page, null, null, api.groups.root.options, Loader.groups.root, {
-                    "query": query,
-                    "sort": "followers",
-                    "direction": "desc",
-                    "per_page": 4
-                }, {
-                    "noPaginator": true,
-                    "noPageMetadata": true,
-                    "noPageMenu": true,
-                    "moreItemsUri": PREFIX + ":search:groups:" + query
+                // Groups uri
+                page.appendItem(PREFIX + ":search:groups:" + query, "directory", {
+                    "title": "Groups"
                 });
             }
         },
 
         "user": {
             "album": {
-                "videos": function(page, user, album) {
+                "videos": function (page, user, album) {
                     page.type = "directory";
                     template(page, "/users/" + user, {
-                            "user": user,
-                            "album": album
-                        },
+                        "user": user,
+                        "album": album
+                    },
                         api.user.album.videos.options, Loader.user.album.videos);
                 }
             },
 
-            "albums": function(page, user) {
+            "albums": function (page, user) {
                 page.type = "directory";
                 template(page, "/users/" + user, user,
                     api.user.albums.options, Loader.user.albums);
             },
 
-            "root": function(page, user) {
+            "root": function (page, user) {
                 page.type = "directory";
                 page.metadata.icon = Plugin.path + "logo.png";
 
@@ -328,26 +247,26 @@ exports.controller = (function() {
                     "direction": "desc",
                     "per_page": 5
                 }, {
-                    "noPaginator": true,
-                    "noPageMetadata": true,
-                    "noPageMenu": true,
-                    "beforeItem": separatorAlbums,
-                    "moreItemsUri": PREFIX + ":user:" + user + ":videos"
-                });
+                        "noPaginator": true,
+                        "noPageMetadata": true,
+                        "noPageMenu": true,
+                        "beforeItem": separatorAlbums,
+                        "moreItemsUri": PREFIX + ":user:" + user + ":videos"
+                    });
 
                 // Album guide
                 template(page, "/users/" + user, user, api.user.albums.options, Loader.user.albums, {
                     "per_page": 5
                 }, {
-                    "noPaginator": true,
-                    "noPageMetadata": false,
-                    "noPageMenu": true,
-                    "moreItemsUri": PREFIX + ":user:" + user + ":albums",
-                    "destroyIfNoElements": separatorAlbums
-                });
+                        "noPaginator": true,
+                        "noPageMetadata": false,
+                        "noPageMenu": true,
+                        "moreItemsUri": PREFIX + ":user:" + user + ":albums",
+                        "destroyIfNoElements": separatorAlbums
+                    });
             },
 
-            "videos": function(page, user) {
+            "videos": function (page, user) {
                 page.type = "directory";
                 template(page, "/users/" + user, user,
                     api.user.videos.options, Loader.user.videos);
@@ -355,7 +274,7 @@ exports.controller = (function() {
         },
 
         "users": {
-            "root": function(page, args) {
+            "root": function (page, args) {
                 page.type = "directory";
                 page.metadata.title = "Vimeo - Users";
                 template(page, null, null,
@@ -363,7 +282,7 @@ exports.controller = (function() {
             }
         },
 
-        "video": function(page, clipId) {
+        "video": function (page, clipId) {
             page.type = "video";
 
             var videoPage = player.getVideoPage(clipId);
@@ -409,7 +328,7 @@ exports.controller = (function() {
         },
 
         "videos": {
-            "root": function(page, args) {
+            "root": function (page, args) {
                 page.type = "directory";
                 page.metadata.title = "Vimeo - Videos";
                 template(page, null, null,
