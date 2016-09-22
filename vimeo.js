@@ -76,10 +76,6 @@ new page.Route("vimeo:start", function(page) {
     view.home.root(page);
 });
 
-new page.Route(PREFIX + ":video:([0-9]*)", function(page, clipId) {
-    view.video(page, clipId);
-});
-
 new page.Route(PREFIX + ":categories", function(page) {
     view.categories.root(page);
 });
@@ -172,6 +168,14 @@ new page.Route(PREFIX + ":search:groups:(.*)", function(page, query) {
         "sort": "followers",
         "direction": "desc"
     });
+});
+
+new page.Route(PREFIX + ":video:([0-9]*)", function(page, clipId) {
+    view.video(page, clipId);
+});
+
+new page.Route("https?://vimeo\.com/([0-9]*)", function(page, clipId) {
+    view.video(page, clipId);
 });
 
 

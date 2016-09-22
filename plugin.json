@@ -4,7 +4,7 @@
 	"homepage": "https://github.com/facanferff/movian-plugin-vimeo",
 	"title": "Vimeo",
 	"synopsis": "Vimeo: Video Sharing service",
-	"version": "0.9.1",
+	"version": "0.9.2",
 	"file": "vimeo.js",
 	"showtimeVersion": "5.0.406",
 	"type": "ecmascript",
